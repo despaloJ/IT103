@@ -1,47 +1,99 @@
-import cv2
+import tkinter as tk
+from tkinter import Frame, Text, Label, RAISED, messagebox, ttk
+import speech_recognition as sr
+import pyttsx3
+from googletrans import Translator
 
-# Load the Haar cascade file for face detection
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+root = tk.Tk()
+root.title('Language Translator')
+root.geometry('590x370')
 
+framel = Frame(root, width=590, height=370, relief=tk.RIDGE, borderwidth=5, bg='#F7DC6F')
+framel.place(x=0, y=0)
 
-# Function to detect faces in the given frame
-def detect_faces_in_frame(frame):
-    # Convert the frame to grayscale
-    grayscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+Label(root, text="Language Translator", font=("Helvetica 20 bold",), fg="black", bg='#F7DC6F').pack(pady=10)
 
-    # Detect faces in the grayscale frame
-    faces = face_cascade.detectMultiScale(grayscale_frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+def translate():
+    lang_l = text_entry1.get("1.0", "end-1c")
+    cl = choose_language.get()
 
-    # Draw rectangles around the detected faces
-    for (x, y, w, h) in faces:
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    if lang_l == '':
+        messagebox.showerror('Language Translator', 'Enter the text to translate!')
+    else:
+        text_entry2.delete(1.0, 'end')
+        translator = Translator()
+        output = translator.translate(lang_l, dest=cl.lower() if cl.lower() != 'English' else 'en')
+        translated_text = output.text
+        pronunciation = output.pronunciation
+        text_entry2.insert('end', f"{translated_text}\n{pronunciation}")
+        # Speak the translated text
+        text_to_speech()
 
-    return frame
+def clear():
+    text_entry1.delete('1.0', 'end')
+    text_entry2.delete('1.0', 'end')
 
+def speech_to_text():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        recognizer.adjust_for_ambient_noise(source)
+        audio = recognizer.listen(source)
 
-# Main function to capture video from webcam and perform face detection
-def webcam_face_detection():
-    # Open the webcam
-    video_capture = cv2.VideoCapture(0)
+    try:
+        text = recognizer.recognize_google(audio)
+        text_entry1.delete('1.0', 'end')
+        text_entry1.insert('end', text)
+    except sr.UnknownValueError:
+        print("Google Speech Recognition could not understand audio")
+    except sr.RequestError as e:
+        print("Could not request results from Google Speech Recognition service; {0}".format(e))
 
-    while True:
-        # Capture frame-by-frame
-        ret, frame = video_capture.read()
+def text_to_speech():
+    text = text_entry2.get("1.0", "end-1c")
+    engine = pyttsx3.init()
+    engine.say(text)
+    engine.runAndWait()
 
-        # Detect faces in the frame
-        frame_with_faces_detected = detect_faces_in_frame(frame)
+a = tk.StringVar()
 
-        # Display the resulting frame with face detection
-        cv2.imshow('Face Detection', frame_with_faces_detected)
+auto_select = ttk.Combobox(framel, width=27, textvariable= a, state='randomly', font=('verdana', 10, 'bold'))
+auto_select['values'] = ('Auto Select',)
+auto_select.place(x=15, y=60)
+auto_select.current(0)
 
-        # Break the loop if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+l = tk.StringVar()
+choose_language = ttk.Combobox(framel, width=27, textvariable=l, state='randomly', font=('verdana', 10, 'bold'))
+choose_language['values'] = (
+    'Afrikaans', 'Albanian', 'Amharic', 'Arabic', 'Armenian', 'Azerbaijani', 'Basque', 'Belarusian', 'Bengali',
+    'Bosnian', 'Bulgarian', 'Catalan', 'Cebuano', 'Chichewa', 'Chinese (Traditional)', 'Corsican', 'Croatian',
+    'Czech', 'Danish', 'Dutch', 'English', 'Esperanto', 'Estonian', 'Filipino', 'Finnish', 'French', 'Frisian',
+    'Galician', 'Georgian', 'German', 'Greek', 'Gujarati', 'Haitian Creole', 'Hausa', 'Hawaiian', 'Hebrew', 'Hindi',
+    'Hmong', 'Hungarian', 'Icelandic', 'Igbo', 'Indonesian', 'Irish', 'Italian', 'Japanese', 'Javanese', 'Kannada',
+    'Kazakh', 'Khmer', 'Korean', 'Kurdish (Kurmanji)', 'Kyrgyz', 'Lao', 'Latin', 'Latvian', 'Lithuanian',
+    'Luxembourgish', 'Macedonian', 'Malagasy', 'Malay', 'Malayalam', 'Maltese', 'Maori', 'Marathi', 'Mongolian',
+    'Myanmar (Burmese)', 'Nepali', 'Norwegian', 'Odia (Oriya)', 'Pashto', 'Persian', 'Polish', 'Portuguese',
+    'Punjabi', 'Romanian', 'Russian', 'Samoan', 'Scots Gaelic', 'Serbian', 'Sesotho', 'Shona', 'Sindhi', 'Sinhala',
+    'Slovak', 'Slovenian', 'Somali', 'Spanish', 'Sundanese', 'Swahili', 'Swedish', 'Tajik', 'Tamil', 'Telugu',
+    'Thai', 'Turkish', 'Ukrainian', 'Urdu', 'Uyghur', 'Uzbek', 'Vietnamese', 'Welsh', 'Xhosa', 'Yiddish', 'Yoruba',
+    'Zulu'
+)
+choose_language.place(x=305, y=60)
+choose_language.current(0)
 
-    # Release the video capture object
-    video_capture.release()
-    cv2.destroyAllWindows()
+text_entry1 = Text(framel, width=20, height=7, borderwidth=5, relief=tk.RIDGE, font=('verdana', 15))
+text_entry1.place(x=10, y=100)
 
+text_entry2 = Text(framel, width=20, height=7, borderwidth=5, relief=tk.RIDGE, font=('verdana', 15))
+text_entry2.place(x=300, y=100)
 
-# Call the main function to start webcam face detection
-webcam_face_detection()
+btn1 = tk.Button(framel, command=translate, text="Translate", relief=RAISED, borderwidth=2, font=('verdana', 10, 'bold'), bg='#248aa2', fg='white', cursor="hand2")
+btn1.place(x=150, y=300)
+
+btn2 = tk.Button(framel, command=speech_to_text, text="Speak", relief=RAISED, borderwidth=2, font=('verdana', 10, 'bold'), bg='#248aa2', fg='white', cursor="hand2")
+btn2.place(x=250, y=300)
+
+btn3 = tk.Button(framel, command=clear, text="Clear", relief=RAISED, borderwidth=2, font=('verdana', 10, 'bold'), bg='#248aa2', fg='white', cursor="hand2")
+btn3.place(x=330, y=300)
+
+root.mainloop()
